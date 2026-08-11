@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-ink-900 text-paper-100 font-sans;
+}
+
+.manifest-num {
+  @apply font-mono tabular-nums;
+}
+
+::selection {
+  @apply bg-amber-500/30;
+}

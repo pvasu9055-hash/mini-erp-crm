@@ -1,0 +1,233 @@
+{
+  "info": {
+    "name": "Mini ERP + CRM Operations Portal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "challanId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@erp.test\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List / Search Customers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/customers?search=&status=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Traders\",\n  \"mobile\": \"9876543210\",\n  \"email\": \"ramesh@traders.com\",\n  \"businessName\": \"Ramesh Traders Pvt Ltd\",\n  \"customerType\": \"WHOLESALE\",\n  \"status\": \"LEAD\"\n}"
+            },
+            "url": "{{baseUrl}}/customers"
+          }
+        },
+        {
+          "name": "Get Customer Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "Add Follow-up Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"note\": \"Called customer, interested in bulk order\"\n}" },
+            "url": "{{baseUrl}}/customers/{{customerId}}/followups"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List / Search Products",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/products?search=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Low Stock Alerts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/products/low-stock"
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PVC Pipe 2 inch\",\n  \"sku\": \"SKU-003\",\n  \"category\": \"Plumbing\",\n  \"unitPrice\": 220.5,\n  \"stock\": 60,\n  \"minStock\": 15,\n  \"location\": \"Warehouse A\"\n}"
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "Manual Stock Movement (IN/OUT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 10,\n  \"movementType\": \"IN\",\n  \"reason\": \"New purchase received\"\n}"
+            },
+            "url": "{{baseUrl}}/products/{{productId}}/stock-movement"
+          }
+        },
+        {
+          "name": "Stock Movement History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/products/{{productId}}/stock-movements"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales Challans",
+      "item": [
+        {
+          "name": "List Challans",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/challans?status=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "Create Challan (Draft)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 5 }\n  ],\n  \"status\": \"DRAFT\"\n}"
+            },
+            "url": "{{baseUrl}}/challans"
+          }
+        },
+        {
+          "name": "Create Challan (Confirmed - reduces stock immediately)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 5 }\n  ],\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": "{{baseUrl}}/challans"
+          }
+        },
+        {
+          "name": "Create Challan - INSUFFICIENT STOCK (expect 400 error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 999999 }\n  ],\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": "{{baseUrl}}/challans"
+          }
+        },
+        {
+          "name": "Get Challan Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/challans/{{challanId}}"
+          }
+        },
+        {
+          "name": "Confirm Draft Challan",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/challans/{{challanId}}/confirm"
+          }
+        },
+        {
+          "name": "Cancel Challan",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/challans/{{challanId}}/cancel"
+          }
+        }
+      ]
+    }
+  ]
+}
