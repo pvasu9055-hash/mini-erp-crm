@@ -60,19 +60,6 @@ The system manages customers, product inventory, and sales challans (dispatch do
 ## 2. System Architecture
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "background": "#0F1113",
-    "primaryColor": "#1B1E23",
-    "primaryTextColor": "#EDEAE3",
-    "primaryBorderColor": "#E8A33D",
-    "lineColor": "#E8A33D",
-    "secondaryColor": "#2A2E35",
-    "tertiaryColor": "#14161A",
-    "fontFamily": "monospace"
-  }
-}}%%
 flowchart TB
     subgraph Client["Browser"]
         UI["React + Vite Frontend<br/>Tailwind CSS · React Router · Axios"]
@@ -115,19 +102,6 @@ flowchart TB
 ## 3. Database Schema
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "background": "#0F1113",
-    "primaryColor": "#1B1E23",
-    "primaryTextColor": "#EDEAE3",
-    "primaryBorderColor": "#E8A33D",
-    "lineColor": "#E8A33D",
-    "secondaryColor": "#2A2E35",
-    "tertiaryColor": "#14161A",
-    "fontFamily": "monospace"
-  }
-}}%%
 erDiagram
     User ||--o{ CustomerFollowUp : creates
     User ||--o{ StockMovement : logs
