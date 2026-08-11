@@ -37,23 +37,23 @@ The system manages customers, product inventory, and sales challans (dispatch do
 
 ## 1. Screenshots
 
-> Replace each placeholder below with a real screenshot from your running app before submitting. Save images into a `/screenshots` folder in the repo root and update the paths.
+> Screenshots are stored in the repository root alongside this README.
 
 | Login | Dashboard |
 |---|---|
-| ![Login](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
+| ![Login](./Login.png) | ![Dashboard](./Dashboard.png) |
 
 | Customers (with follow-ups) | Products (with stock log) |
 |---|---|
-| ![Customers](./screenshots/customers.png) | ![Products](./screenshots/products.png) |
+| ![Customers](./Customers.png) | ![Products](./Products.png) |
 
 | Sales Challan flow | Role permission block (403) |
 |---|---|
-| ![Challans](./screenshots/challans.png) | ![403 error](./screenshots/permission-denied.png) |
+| ![Challans](./Challans.png) | ![403 error](./403%20error.png) |
 
 | Admin — User Management | Postman — negative test cases |
 |---|---|
-| ![Users](./screenshots/users.png) | ![Postman](./screenshots/postman.png) |
+| ![Users](./Users.png) | ![Postman](./Postman.png) |
 
 ---
 
