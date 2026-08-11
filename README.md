@@ -1,140 +1,131 @@
-# Mini ERP + CRM Operations Portal
+# Mini ERP + CRM — Operations Portal
 
-Full-stack ERP/CRM system for a wholesale/distribution company — customers, products/inventory, and sales challans with role-based access.
+A full-stack ERP/CRM system built for a wholesale/distribution business, developed as part of the Fundsroom Infotech Pvt. Ltd. Full Stack Developer case study. The system manages customers, product inventory, and sales challans (dispatch documents) across four operational roles — Admin, Sales, Warehouse, and Accounts — with role-based access control enforced end-to-end from the UI down to the database transaction layer.
 
-**Stack:** Node.js + Express + TypeScript + Prisma + PostgreSQL (backend) · React + Vite + TypeScript + Tailwind (frontend)
+**GitHub:** https://github.com/pvasu9055-hash/mini-erp-crm
+**Live Frontend:** https://minierp.vasutech.online
+**Live Backend API:** https://minierp-api.vasutech.online
 
----
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Node.js, TypeScript, Express.js |
+| Database | PostgreSQL (hosted on Supabase), Prisma ORM |
+| Auth | JWT (jsonwebtoken), bcrypt password hashing |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, React Router, Axios |
+| Hosting | Azure App Service (backend), custom domain via vasutech.online (frontend) |
 
 ## Architecture
 
-```
-mini-erp-crm/
-├── backend/          Express REST API, Prisma ORM, JWT auth
-│   ├── prisma/schema.prisma   All DB models
-│   └── src/
-│       ├── routes/            auth, customers, products, challans
-│       ├── middleware/        JWT auth + role guard, error handler
-│       └── server.ts
-└── frontend/         React SPA (Vite), Tailwind admin UI
-    └── src/
-        ├── pages/              Login, Dashboard, Customers, Products, Challans
-        ├── context/AuthContext.tsx
-        └── api/client.ts       Axios instance with JWT interceptor
-```
+Backend (`/backend`) is a route-per-module REST API: `auth.routes.ts` (login, register, profile), `customer.routes.ts` (CRM CRUD, search, follow-ups), `product.routes.ts` (inventory CRUD, stock movements, low-stock), `challan.routes.ts` (sales challans: create/confirm/cancel), `user.routes.ts` (admin-only: list users, change roles). Two middleware files handle cross-cutting concerns: `auth.ts` (`authenticate()` verifies the JWT, `authorize(...roles)` gates routes by role) and `errorHandler.ts` (centralized error handling with a consistent JSON error shape).
 
-**Key design decisions:**
-- **Product snapshotting**: `ChallanItem` stores `productNameSnap`, `productSkuSnap`, `unitPriceSnap` at creation time — so editing a product later never retroactively changes historical challans.
-- **Stock integrity**: every stock-reducing action (challan confirm, manual OUT movement) runs inside a Prisma `$transaction`, validates current stock first, and throws a proper 400 error rather than allowing negative stock.
-- **Role-based access**: `authenticate` middleware verifies the JWT; `authorize(...roles)` middleware restricts specific routes (e.g. only `ADMIN`/`SALES` can create customers, only `ADMIN`/`WAREHOUSE` can adjust products).
-- **Challan lifecycle**: `DRAFT → CONFIRMED → (optional) CANCELLED`. Confirming deducts stock; cancelling a confirmed challan re-adds stock and logs the reversal as a stock movement.
+Key design decisions:
 
----
+- **Transactional integrity.** Every stock-affecting operation (challan create-and-confirm, challan confirm, challan cancel, manual stock adjustment) runs inside a Prisma `$transaction`. Stock level updates and their corresponding `StockMovement` audit log entries commit or roll back together — they can never drift out of sync, and stock can never go negative under concurrent requests.
+- **Product snapshotting.** `ChallanItem` stores the product's name, SKU, and unit price at the time the challan was created, not just a foreign key. A challan from months ago still displays accurately even if that product's price or name has since changed — matching real invoicing/dispatch behavior.
+- **Role enforcement at the middleware layer.** `authorize("ADMIN", "SALES")` etc. is applied per-route, so permission logic lives in one place per endpoint rather than scattered through business logic.
+- **Self-registration is deliberately restricted.** The `/auth/register` endpoint's validation only accepts `SALES`, `WAREHOUSE`, or `ACCOUNTS` — `ADMIN` is rejected with a 400 even if sent directly via API, not just hidden in the UI. Admin access can only be granted by an existing Admin through the Users page. This was tested directly against the deployed API to confirm the bypass attempt fails.
+
+Frontend (`/frontend`) follows a page-per-module structure: `pages/` (Dashboard, Customers, Products, Challans, Users, Login, Signup, Profile), `components/` (Layout with sidebar nav, ProtectedRoute), `context/` (AuthContext for JWT storage and login/logout), `api/` (Axios client with an auth interceptor). The JWT is stored in `localStorage` and attached automatically to every request via an Axios request interceptor; a response interceptor auto-logs-out on a 401. Sidebar navigation is role-aware — the "Users" admin page link only renders for `ADMIN` accounts, though the backend is the actual authority, verified via direct API calls rather than relying on hidden UI alone.
+
+## Roles & Permissions
+
+| Action | Admin | Sales | Warehouse | Accounts |
+|---|:---:|:---:|:---:|:---:|
+| View customers / products / challans | ✅ | ✅ | ✅ | ✅ |
+| Add / edit customers, add follow-up notes | ✅ | ✅ | ❌ | ❌ |
+| Add / edit products, log manual stock movements | ✅ | ❌ | ✅ | ❌ |
+| Create / cancel sales challans | ✅ | ✅ | ❌ | ❌ |
+| Confirm sales challans (dispatch/fulfillment) | ✅ | ✅ | ✅ | ❌ |
+| Manage user roles | ✅ | ❌ | ❌ | ❌ |
+
+All of the above are enforced server-side via `authorize(...)` middleware — confirmed with live 403 responses, both through the UI and directly via the included Postman collection's negative test cases.
 
 ## Local Setup
 
-### 1. Database (Supabase — free tier)
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to Project Settings → Database → Connection String (URI, use the **pooler** connection for serverless-friendly, or direct for local dev)
-3. Copy it — you'll need it as `DATABASE_URL`
+**Prerequisites:** Node.js 18+, a PostgreSQL database (local instance, or a free Supabase/Neon project).
 
-### 2. Backend
+**1. Clone and install dependencies**
 ```bash
-cd backend
-cp .env.example .env
-# edit .env: paste your DATABASE_URL, set a random JWT_SECRET
-
-npm install
-npx prisma generate
-npx prisma db push        # creates all tables from schema.prisma
-npm run prisma:seed       # creates 4 test users + 2 sample products
-
-npm run dev                # starts on http://localhost:5000
+git clone https://github.com/pvasu9055-hash/mini-erp-crm.git
+cd mini-erp-crm
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-Test users created by seed (password for all: `Password@123`):
-| Role      | Email               |
-|-----------|---------------------|
-| Admin     | admin@erp.test      |
-| Sales     | sales@erp.test      |
-| Warehouse | warehouse@erp.test  |
-| Accounts  | accounts@erp.test   |
+**2. Environment variables**
 
-### 3. Frontend
-```bash
-cd frontend
-cp .env.example .env      # VITE_API_URL=http://localhost:5000
-npm install
-npm run dev                # starts on http://localhost:5173
-```
-
-Open `http://localhost:5173`, log in with any seeded account.
-
----
-
-## Environment Variables
-
-**backend/.env**
-```
-DATABASE_URL="postgresql://...supabase connection string..."
-JWT_SECRET="any-long-random-string"
+`backend/.env`
+```env
+DATABASE_URL="postgresql://user:password@host:5432/postgres"
+JWT_SECRET="replace-with-a-long-random-string"
 PORT=5000
 ```
 
-**frontend/.env**
-```
-VITE_API_URL=http://localhost:5000   # or your deployed backend URL
-```
-
----
-
-## Deployment (free tier, no AWS required)
-
-| Layer    | Platform          | Notes |
-|----------|-------------------|-------|
-| Database | Supabase          | Free Postgres, get connection string from project settings |
-| Backend  | Render (Web Service) | Root dir `backend`, build `npm install && npm run build && npx prisma generate`, start `npm start`. Add env vars in Render dashboard. |
-| Frontend | Vercel            | Root dir `frontend`, framework preset "Vite", add `VITE_API_URL` env var pointing to your Render backend URL |
-
-After deploying, update `frontend/.env` (or Vercel env var) `VITE_API_URL` to the live Render backend URL, and re-deploy frontend.
-
-AWS deployment was treated as optional per the assignment brief and was not pursued to keep this reproducible on free infra within the time window.
-
----
-
-## API Overview
-
-Full endpoint list in `postman_collection.json`. Highlights:
-
-```
-POST   /auth/login
-GET    /customers?search=&status=&page=&limit=
-POST   /customers
-POST   /customers/:id/followups
-GET    /products?search=&category=
-POST   /products
-POST   /products/:id/stock-movement       # manual IN/OUT adjustment
-GET    /challans
-POST   /challans                           # create as DRAFT or CONFIRMED
-PATCH  /challans/:id/confirm               # DRAFT -> CONFIRMED, reduces stock
-PATCH  /challans/:id/cancel                # reverses stock if was CONFIRMED
+`frontend/.env`
+```env
+VITE_API_URL="http://localhost:5000"
 ```
 
-All routes except `/auth/login` require `Authorization: Bearer <token>`.
+`.env.example` templates are included in both `/backend` and `/frontend`.
 
----
+**3. Database setup**
+```bash
+cd backend
+npx prisma db push
+npx prisma db seed
+```
 
-## Known Limitations / Not Implemented
+**4. Run locally**
+```bash
+# Terminal 1 — backend
+cd backend
+npm run dev      # http://localhost:5000
 
-- No PDF invoice export (listed as bonus in brief)
-- No Docker setup or CI/CD pipeline (bonus)
-- No product image upload to S3 (bonus)
-- Purchase Orders module not implemented — brief's core requirement was Customer, Product/Inventory, and Sales Challan modules; Purchase Orders were mentioned only in business context, not in "Core Modules Required"
-- Frontend has functional CRUD + the full challan business-logic flow (draft/confirm/cancel with stock validation) but minimal styling polish beyond a clean admin layout
-- No automated test suite — validated manually via the Postman collection and UI walkthrough
+# Terminal 2 — frontend
+cd frontend
+npm run dev      # http://localhost:5173
+```
 
-## Assumptions Made
+**Test accounts (seeded)**
 
-- "Stock should not go negative" is enforced at both challan-creation time (if created directly as CONFIRMED) and at confirm-time (if a DRAFT is confirmed later, in case stock shifted in between)
-- Challan numbers reset sequence per calendar year (`CH-2026-0001`, `CH-2027-0001`, ...)
-- Only `ADMIN`/`SALES` can create/edit customers and challans; only `ADMIN`/`WAREHOUSE` can create/edit products and manual stock movements; confirming a challan is allowed for `ADMIN`, `SALES`, and `WAREHOUSE` since warehouse staff are typically the ones fulfilling and confirming dispatch
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@erp.test | Password@123 |
+| Sales | sales@erp.test | Password@123 |
+| Warehouse | warehouse@erp.test | Password@123 |
+| Accounts | accounts@erp.test | Password@123 |
+
+New accounts can also be created via the Signup page — self-registration is limited to Sales, Warehouse, or Accounts roles; Admin access must be granted afterward by an existing Admin via the Users page.
+
+## Server Setup & Environment Variables
+
+Backend is hosted on **Azure App Service**. Environment variables (`DATABASE_URL`, `JWT_SECRET`, `PORT`) are set directly in Azure's Application Settings — never committed to the repository. The database is hosted PostgreSQL via **Supabase**; the same `DATABASE_URL` connection string is used locally (in `.env`) and in Azure's configuration for the deployed instance.
+
+The backend runs via `nodemon` + `ts-node` in development. `nodemon.json` scopes the file watcher to `src/` only with a 1-second restart delay, which avoids a race condition where rapid saves cause the old process to still be releasing port 5000 when the new one tries to bind (`EADDRINUSE`).
+
+`JWT_SECRET` falls back to an insecure dev default if unset — fine for local development only; a real random secret is set in Azure's Application Settings for the live deployment. The frontend is deployed with `VITE_API_URL` pointed at the live backend, mapped to the custom domain `minierp.vasutech.online`.
+
+## Deploying This Project
+
+1. Create a free Postgres project on Supabase (or Neon / Render Postgres) and copy its connection string.
+2. Deploy `/backend` to Azure App Service (or Render / Railway / Fly.io). Set `DATABASE_URL`, `JWT_SECRET`, and `PORT` as environment variables in the platform's dashboard. Run `npx prisma db push` once against the live database to create tables, then `npx prisma db seed` if you want the test accounts.
+3. Deploy `/frontend` to your platform of choice (Vercel, Netlify, or similar), with `VITE_API_URL` set to the live backend's URL as a build-time environment variable.
+4. Optionally map custom domains to both — done here via vasutech.online.
+
+## API Documentation
+
+`postman_collection.json` in the project root contains the full API surface, organized by module (Auth, Users, Customers, Products, Sales Challans), including every standard CRUD/list/search/filter endpoint plus negative test cases: insufficient stock (400), permission-denied actions by the wrong role (403), and a rejected admin self-registration attempt (400) — demonstrating the business rules and access control hold under misuse, not just the happy path. The collection's `baseUrl` variable defaults to `http://localhost:5000`; update it to `https://minierp-api.vasutech.online` to test against the live deployment.
+
+## Assumptions
+
+"Confirm" on a sales challan is treated as the point stock is committed and physically leaves inventory; a Draft challan reserves nothing. Warehouse is allowed to confirm a challan (modeling the warehouse team physically packing/dispatching an order) but cannot originate or cancel one — that stays with Sales/Admin, who own the customer relationship. Accounts role currently has read-only access across all modules, since the spec didn't define Accounts-specific write actions. Self-registration defaults to non-admin roles as a security measure; the first Admin account is seeded via `prisma/seed.ts`, and further Admins are promoted manually through the Users page.
+
+## Known Limitations
+
+No invoice PDF export or product image upload to S3 — both were bonus items, not implemented due to time constraints. No automated test suite; testing was done manually plus via the included Postman collection's positive and negative cases. CORS is currently open for ease of development — a longer-lived deployment would restrict it to the frontend's origin only. The "Users" admin page is a bonus feature beyond spec requirements; role changes take effect on the affected user's next login, since JWTs carry the role at issue-time.
+
+## Bonus Features Implemented
+
+Full stock movement audit trail beyond challan-triggered deductions, including a manual IN/OUT adjustment endpoint (for purchases, damage, corrections) with a per-product movement history view. Admin-only User Management page to view every account and reassign roles, with the promotion path hardened against self-service Admin escalation — verified via a direct API bypass attempt, not just hidden in the UI. Editable Profile page for updating your own name and password. A polished, purpose-built dark "operations manifest" UI theme — monospace for codes/SKUs/challan numbers, warehouse-amber accents — rather than a generic admin template. Live production deployment on Azure App Service and Supabase with a custom domain, rather than relying on the local-setup fallback.
