@@ -43,17 +43,21 @@ The system manages customers, product inventory, and sales challans (dispatch do
 |---|---|
 | ![Login](./Login.png) | ![Dashboard](./Dashboard.png) |
 
-| Customers (with follow-ups) | Products (with stock log) |
+| Customers (list + follow-ups) | Customer Detail Page |
 |---|---|
-| ![Customers](./Customers.png) | ![Products](./Products.png) |
+| ![Customers](./Customers.png) | ![Customer Detail](./CustomerDetail.png) |
 
-| Sales Challan flow | Role permission block (403) |
+| Products (with stock log) | Sales Challan flow (with Created By / Date) |
 |---|---|
-| ![Challans](./Challans.png) | ![403 error](./403%20error.png) |
+| ![Products](./Products.png) | ![Challans](./Challans.png) |
 
-| Admin — User Management | Postman — negative test cases |
+| Role permission block (403) | Admin — User Management |
 |---|---|
-| ![Users](./Users.png) | ![Postman](./Postman.png) |
+| ![403 error](./403%20error.png) | ![Users](./Users.png) |
+
+| Postman — negative test cases | |
+|---|---|
+| ![Postman](./Postman.png) | |
 
 ---
 
@@ -95,7 +99,7 @@ flowchart TB
 2. Express receives the request; `authenticate()` verifies the JWT signature and decodes `{ userId, role }` onto `req.user`.
 3. `authorize("ADMIN", "SALES")` (or whichever roles apply to that route) checks `req.user.role` against an allow-list — returns `403` immediately if not permitted.
 4. The route handler runs its business logic through Prisma, hitting the Supabase-hosted PostgreSQL database.
-5. Stock-affecting operations wrap steps 4 in a `$transaction` so partial failures can't corrupt stock counts.
+5. Stock-affecting operations wrap step 4 in a `$transaction` so partial failures can't corrupt stock counts.
 
 ---
 
@@ -247,7 +251,7 @@ Self-registration is capped at Sales/Warehouse/Accounts by validation on **both*
 | Auth | JWT (jsonwebtoken) + bcrypt | Stateless auth as spec allows ("simple JWT-based authentication is acceptable") |
 | Frontend | React + TypeScript + Vite | Fast dev server, component-driven UI |
 | Styling | Tailwind CSS | Utility-first, fast to theme consistently |
-| Routing | React Router | Client-side routing + protected routes |
+| Routing | React Router | Client-side routing, protected routes, and nested detail routes (e.g. `/customers/:id`) |
 | HTTP client | Axios | Interceptors for auth headers and 401 handling |
 | Backend hosting | Azure App Service | Free-tier eligible, documented env var management |
 | Frontend hosting | Custom domain via vasutech.online | Live, publicly reachable deployment |
@@ -265,9 +269,10 @@ mini-erp-crm/
 │   ├── src/
 │   │   ├── routes/
 │   │   │   ├── auth.routes.ts       # login, register, /me profile
-│   │   │   ├── customer.routes.ts   # CRUD, search, follow-ups
+│   │   │   ├── customer.routes.ts   # CRUD, search, detail, follow-ups
 │   │   │   ├── product.routes.ts    # CRUD, stock movements, low-stock
 │   │   │   ├── challan.routes.ts    # create/confirm/cancel + stock logic
+│   │   │   │                        #   (list endpoint includes createdBy for audit visibility)
 │   │   │   └── user.routes.ts       # admin-only: list/promote users
 │   │   ├── middleware/
 │   │   │   ├── auth.ts              # authenticate(), authorize(...roles)
@@ -277,7 +282,16 @@ mini-erp-crm/
 │   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/                   # Dashboard, Customers, Products, Challans, Users, Login, Signup, Profile
+│   │   ├── pages/
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Customers.tsx        # list, search, add, inline follow-ups
+│   │   │   ├── CustomerDetail.tsx   # dedicated /customers/:id page — full field view + edit
+│   │   │   ├── Products.tsx
+│   │   │   ├── Challans.tsx         # draft/confirm/cancel, shows Created By/Date
+│   │   │   ├── Users.tsx
+│   │   │   ├── Login.tsx
+│   │   │   ├── Signup.tsx
+│   │   │   └── Profile.tsx
 │   │   ├── components/              # Layout (sidebar), ProtectedRoute
 │   │   ├── context/AuthContext.tsx  # JWT storage, login/logout
 │   │   └── api/client.ts            # Axios instance + interceptors
@@ -377,7 +391,7 @@ None of these are committed to the repository — `.env` is git-ignored; only `.
 - **Dev server stability:** the backend runs via `nodemon` + `ts-node`. `nodemon.json` restricts the watcher to `src/` only, with a 1-second restart delay — without this, rapid file saves during development could trigger a restart before the previous process fully released port 5000, causing `EADDRINUSE` crashes.
 - **JWT_SECRET fallback:** the code falls back to a dev-only placeholder if `JWT_SECRET` is unset, so local setup never blocks on a missing env var — but this fallback is never used in the deployed instance, where a real secret is set in Azure.
 - **CORS:** currently permissive (`cors()` with defaults) to simplify local development against the deployed API. See [Known Limitations](#14-known-limitations).
-- **SPA routing on Azure Static Web Apps:** because this is a client-side-routed React app, directly loading or refreshing a nested route (e.g. `/login`, `/customers`) against the static host returns a `404` unless the host is told to fall back to `index.html` for unmatched paths. Fixed via `frontend/staticwebapp.config.json`:
+- **SPA routing on Azure Static Web Apps:** because this is a client-side-routed React app — including nested routes like `/customers/:id` — directly loading or refreshing a nested route against the static host returns a `404` unless the host is told to fall back to `index.html` for unmatched paths. Fixed via `frontend/staticwebapp.config.json`:
   ```json
   {
     "navigationFallback": {
@@ -386,7 +400,7 @@ None of these are committed to the repository — `.env` is git-ignored; only `.
     }
   }
   ```
-  This lets React Router take over rendering for any route not matching a real static asset.
+  This lets React Router take over rendering for any route not matching a real static asset — including refreshing directly on a customer's detail page.
 
 ---
 
@@ -395,12 +409,13 @@ None of these are committed to the repository — `.env` is git-ignored; only `.
 How this project is actually deployed, and how to redeploy it elsewhere:
 
 1. **Database** — created a free PostgreSQL project on [Supabase](https://supabase.com), copied its connection string into `DATABASE_URL`.
-2. **Backend** — deployed `/backend` to **Azure App Service**:
+2. **Backend** — deployed `/backend` to **Azure App Service** via Azure Portal's Deployment Center, connected directly to this GitHub repo (auto CI/CD on every push to `main`):
    - Set `DATABASE_URL`, `JWT_SECRET`, `PORT` in Azure's *Configuration → Application Settings* (never committed to source).
    - Ran `npx prisma db push` once against the live Supabase database to create all tables.
    - Ran `npx prisma db seed` once to create the 4 test accounts.
-3. **Frontend** — deployed `/frontend` with `VITE_API_URL` set at build time to the live backend URL, then mapped to a custom domain (`minierp.vasutech.online`) via vasutech.online's DNS.
-4. Verified end-to-end: logged in live, walked through every module, and confirmed role-based 403s fire correctly against the production API (not just locally).
+3. **Frontend** — deployed `/frontend` via Azure Static Web Apps, also connected to this repo for auto-deploy, with `VITE_API_URL` set at build time to the live backend URL, then mapped to a custom domain (`minierp.vasutech.online`) via vasutech.online's DNS.
+4. **Continuous deployment:** every `git push` to `main` triggers two GitHub Actions workflows automatically — one builds/deploys the frontend to Azure Static Web Apps, the other builds/deploys the backend to Azure App Service. Both are visible and verifiable under the repo's **Actions** tab.
+5. Verified end-to-end: logged in live, walked through every module, and confirmed role-based 403s fire correctly against the production API (not just locally).
 
 To redeploy this stack elsewhere (Render/Railway/Fly.io for backend, Vercel/Netlify for frontend — all acceptable per the assignment), the steps are the same in spirit: provision Postgres, set the three backend env vars on your platform of choice, push the schema, then point the frontend's `VITE_API_URL` at wherever the backend ends up.
 
@@ -416,7 +431,7 @@ To redeploy this stack elsewhere (Render/Railway/Fly.io for backend, Vercel/Netl
 | **Users** (Admin only) | List all users, Change user role, List-as-non-admin (403 test) |
 | **Customers** | List/search, Create, Get detail, Update, Add follow-up, Create-as-Warehouse (403 test) |
 | **Products** | List/search, Low-stock alerts, Create, Manual stock movement, Movement history, Create-as-Sales (403 test) |
-| **Sales Challans** | List, Create (Draft/Confirmed), Insufficient-stock (400 test), Get detail, Confirm, Cancel, Create-as-Warehouse (403 test) |
+| **Sales Challans** | List (includes createdBy), Create (Draft/Confirmed), Insufficient-stock (400 test), Get detail, Confirm, Cancel, Create-as-Warehouse (403 test) |
 
 **This collection includes negative test cases deliberately** — not just the happy path — so a reviewer can see the business rules and access control actually hold under misuse:
 - Insufficient stock → `400` with a clear message
@@ -433,6 +448,8 @@ To use it: import into Postman, set the `baseUrl` collection variable to either 
 - **Warehouse can confirm, not originate.** Confirming a challan is modeled as the warehouse team physically packing/dispatching an order — a fulfillment action. Creating or cancelling a challan stays with Sales/Admin, since that's a customer-relationship decision, not a fulfillment one.
 - **Accounts is read-only for now.** The spec didn't define specific write actions for Accounts (e.g. invoicing), so none were invented rather than guessed.
 - **Self-registration excludes Admin by design.** Not explicitly required by the spec, but a reasonable security default: the first Admin is seeded via `prisma/seed.ts`, and every subsequent Admin is a deliberate promotion by an existing Admin — never a self-service signup choice.
+- **Customer detail is a real routed page, not a modal.** The spec explicitly lists "View customer detail page" as a required feature. Rather than an inline expand-in-place row, `/customers/:id` is a genuine React Router route with its own URL — shareable, refreshable, and back-button-friendly — matching the literal wording of the requirement rather than just its spirit.
+- **Challan list surfaces `createdBy` and `createdAt` directly in the table**, not just in the single-challan detail response, since the spec explicitly lists both as required challan fields a user should be able to see at a glance.
 
 ---
 
@@ -451,10 +468,11 @@ To use it: import into Postman, set the `baseUrl` collection variable to either 
 Beyond the spec's core requirements, this submission also includes:
 
 - **Full stock movement audit trail** — not just challan-triggered deductions, but a manual IN/OUT adjustment endpoint (for new purchases, damage, corrections) with a per-product movement history view.
+- **Dedicated customer detail page** (`/customers/:id`) — full field view (mobile, email, business name, GST, type, status, follow-up date, address, notes), inline edit, and a live follow-up notes feed, all on a real routed URL.
 - **Admin-only User Management page** — view every account, reassign any user's role, with the Admin-escalation path hardened against self-promotion (verified via a direct API bypass attempt, not just a hidden button).
 - **Editable Profile page** — update your own name and password.
 - **Custom dark "operations manifest" UI theme** — monospace type for codes/SKUs/challan numbers, warehouse-amber accents — designed around how a wholesale dispatch team actually works, not a generic admin template.
-- **Live production deployment** — Azure App Service + Supabase + a custom domain, rather than relying on the assignment's local-setup fallback option.
+- **Live production deployment with CI/CD** — Azure App Service + Azure Static Web Apps + Supabase + a custom domain, with GitHub Actions auto-deploying both frontend and backend on every push, rather than relying on the assignment's local-setup fallback option.
 
 ---
 
@@ -467,4 +485,4 @@ Beyond the spec's core requirements, this submission also includes:
 - [x] Postman collection with positive + negative test cases — `postman_collection.json`
 - [x] README with setup, architecture, deployment, and limitations — this file
 - [ ] Screen recording of the full flow
-- [ ] Screenshots added to `/screenshots` folder (section 1)
+- [ ] Screenshots added to repo root (section 1) — including `CustomerDetail.png`
