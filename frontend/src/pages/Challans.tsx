@@ -8,6 +8,8 @@ interface Challan {
   totalQuantity: number;
   customer: { name: string; mobile: string };
   items: { productNameSnap: string; quantity: number }[];
+  createdBy?: { name: string };
+  createdAt: string;
 }
 interface Customer { id: string; name: string; mobile: string }
 interface Product { id: string; name: string; sku: string; stock: number; unitPrice: string }
@@ -181,6 +183,8 @@ export default function Challans() {
               <th className="p-3">Items</th>
               <th className="p-3">Qty</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Created By</th>
+              <th className="p-3">Created Date</th>
               <th className="p-3">Actions</th>
             </tr>
           </thead>
@@ -198,6 +202,10 @@ export default function Challans() {
                     {c.status}
                   </span>
                 </td>
+                <td className="p-3 text-xs text-paper-300">{c.createdBy?.name || "—"}</td>
+                <td className="p-3 text-xs text-paper-400 font-mono">
+                  {new Date(c.createdAt).toLocaleDateString()}
+                </td>
                 <td className="p-3 space-x-3">
                   {c.status === "DRAFT" && (
                     <button onClick={() => confirmChallan(c.id)} className="text-xs text-amber-400 hover:underline font-mono">Confirm</button>
@@ -209,7 +217,7 @@ export default function Challans() {
               </tr>
             ))}
             {challans.length === 0 && (
-              <tr><td colSpan={6} className="p-4 text-center text-paper-400">No challans yet</td></tr>
+              <tr><td colSpan={8} className="p-4 text-center text-paper-400">No challans yet</td></tr>
             )}
           </tbody>
         </table>

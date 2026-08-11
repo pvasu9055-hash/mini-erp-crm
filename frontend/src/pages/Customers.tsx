@@ -1,4 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 
 interface Customer {
@@ -137,7 +138,11 @@ export default function Customers() {
             {customers.map((c) => (
               <>
                 <tr key={c.id} className="border-t border-ink-700 hover:bg-ink-700/40 transition">
-                  <td className="p-3 font-medium text-paper-100">{c.name}</td>
+                  <td className="p-3 font-medium">
+                    <Link to={`/customers/${c.id}`} className="text-amber-400 hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="p-3 font-mono text-paper-200">{c.mobile}</td>
                   <td className="p-3 text-paper-400">{c.businessName || "—"}</td>
                   <td className="p-3 text-paper-400">{c.customerType}</td>

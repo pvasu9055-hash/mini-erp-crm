@@ -42,6 +42,7 @@ router.get(
         include: {
           customer: { select: { name: true, mobile: true } },
           items: true,
+          createdBy: { select: { name: true } },
         },
         orderBy: { createdAt: "desc" },
       }),
