@@ -37,23 +37,23 @@ The system manages customers, product inventory, and sales challans (dispatch do
 
 ## 1. Screenshots
 
-> Replace each placeholder below with a real screenshot from your running app before submitting. Save images into a `/screenshots` folder in the repo root and update the paths.
+> Screenshots are stored in the repository root alongside this README.
 
 | Login | Dashboard |
 |---|---|
-| ![Login](./screenshots/login.png) | ![Dashboard](./screenshots/dashboard.png) |
+| ![Login](./Login.png) | ![Dashboard](./Dashboard.png) |
 
 | Customers (with follow-ups) | Products (with stock log) |
 |---|---|
-| ![Customers](./screenshots/customers.png) | ![Products](./screenshots/products.png) |
+| ![Customers](./Customers.png) | ![Products](./Products.png) |
 
 | Sales Challan flow | Role permission block (403) |
 |---|---|
-| ![Challans](./screenshots/challans.png) | ![403 error](./screenshots/permission-denied.png) |
+| ![Challans](./Challans.png) | ![403 error](./403%20error.png) |
 
 | Admin — User Management | Postman — negative test cases |
 |---|---|
-| ![Users](./screenshots/users.png) | ![Postman](./screenshots/postman.png) |
+| ![Users](./Users.png) | ![Postman](./Postman.png) |
 
 ---
 
@@ -377,6 +377,16 @@ None of these are committed to the repository — `.env` is git-ignored; only `.
 - **Dev server stability:** the backend runs via `nodemon` + `ts-node`. `nodemon.json` restricts the watcher to `src/` only, with a 1-second restart delay — without this, rapid file saves during development could trigger a restart before the previous process fully released port 5000, causing `EADDRINUSE` crashes.
 - **JWT_SECRET fallback:** the code falls back to a dev-only placeholder if `JWT_SECRET` is unset, so local setup never blocks on a missing env var — but this fallback is never used in the deployed instance, where a real secret is set in Azure.
 - **CORS:** currently permissive (`cors()` with defaults) to simplify local development against the deployed API. See [Known Limitations](#14-known-limitations).
+- **SPA routing on Azure Static Web Apps:** because this is a client-side-routed React app, directly loading or refreshing a nested route (e.g. `/login`, `/customers`) against the static host returns a `404` unless the host is told to fall back to `index.html` for unmatched paths. Fixed via `frontend/staticwebapp.config.json`:
+  ```json
+  {
+    "navigationFallback": {
+      "rewrite": "/index.html",
+      "exclude": ["/assets/*", "*.{png,jpg,jpeg,svg,ico,css,js,json}"]
+    }
+  }
+  ```
+  This lets React Router take over rendering for any route not matching a real static asset.
 
 ---
 
@@ -450,7 +460,7 @@ Beyond the spec's core requirements, this submission also includes:
 
 ## 16. Submission Checklist
 
-- [x] GitHub repository — https://github.com/pvasu9055-hash/mini-erp-crm
+- [x] GitHub repository — https://github.com/pvasu9055-hash/mini-erp-crm (pushed)
 - [x] Live frontend — https://minierp.vasutech.online
 - [x] Live backend API — https://minierp-api.vasutech.online
 - [x] Test credentials for all 4 roles (section 8)
