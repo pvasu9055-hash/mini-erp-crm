@@ -60,6 +60,7 @@ The system manages customers, product inventory, and sales challans (dispatch do
 ## 2. System Architecture
 
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000"}}}%%
 flowchart TB
     subgraph Client["Browser"]
         UI["React + Vite Frontend<br/>Tailwind CSS · React Router · Axios"]
@@ -102,6 +103,7 @@ flowchart TB
 ## 3. Database Schema
 
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000"}}}%%
 erDiagram
     User ||--o{ CustomerFollowUp : creates
     User ||--o{ StockMovement : logs
@@ -187,24 +189,7 @@ erDiagram
 This is the most business-critical flow in the system: confirming a challan reduces stock, and that reduction must never leave the database in an inconsistent state (e.g., stock reduced but no audit log entry, or vice versa).
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "background": "#0F1113",
-    "primaryColor": "#1B1E23",
-    "primaryTextColor": "#EDEAE3",
-    "primaryBorderColor": "#E8A33D",
-    "lineColor": "#E8A33D",
-    "secondaryColor": "#2A2E35",
-    "tertiaryColor": "#14161A",
-    "actorBkg": "#1B1E23",
-    "actorTextColor": "#EDEAE3",
-    "actorBorder": "#E8A33D",
-    "signalColor": "#EDEAE3",
-    "signalTextColor": "#EDEAE3",
-    "fontFamily": "monospace"
-  }
-}}%%
+%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000", "actorTextColor": "#000000", "signalTextColor": "#000000"}}}%%
 sequenceDiagram
     participant U as User (Sales/Warehouse)
     participant F as Frontend
