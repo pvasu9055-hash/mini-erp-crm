@@ -168,6 +168,7 @@ export default function Products() {
               <th className="p-3">Category</th>
               <th className="p-3">Price</th>
               <th className="p-3">Stock</th>
+              <th className="p-3">Location</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -185,6 +186,7 @@ export default function Products() {
                     </span>
                     {p.stock <= p.minStock && <span className="ml-1 text-xs text-signal-500">(low)</span>}
                   </td>
+                  <td className="p-3 text-paper-400">{p.location || "—"}</td>
                   <td className="p-3 space-x-3">
                     <button onClick={() => startEdit(p)} className="text-xs text-amber-400 hover:underline font-mono">
                       Edit
@@ -197,7 +199,7 @@ export default function Products() {
 
                 {editingId === p.id && (
                   <tr className="bg-ink-900/60 border-t border-ink-700">
-                    <td colSpan={6} className="p-4">
+                    <td colSpan={7} className="p-4">
                       <p className="text-xs font-mono text-amber-500 uppercase tracking-wide mb-2">Edit Product</p>
                       <form onSubmit={(e) => submitEdit(e, p.id)} className="grid grid-cols-3 gap-3">
                         <input placeholder="Name" required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} />
@@ -223,7 +225,7 @@ export default function Products() {
 
                 {expandedId === p.id && (
                   <tr className="bg-ink-900/60 border-t border-ink-700">
-                    <td colSpan={6} className="p-4">
+                    <td colSpan={7} className="p-4">
                       <p className="text-xs font-mono text-amber-500 uppercase tracking-wide mb-2">Stock Movement Log</p>
                       <div className="space-y-1 mb-3 max-h-48 overflow-y-auto">
                         {movements.length === 0 && (
@@ -240,7 +242,7 @@ export default function Products() {
                             <div className="flex items-center gap-3 text-xs text-paper-400 font-mono">
                               <span>{m.movementType === "IN" ? "+" : "−"}{m.quantity}</span>
                               <span>{m.createdBy?.name}</span>
-                              <span>{new Date(m.createdAt).toLocaleDateString()}</span>
+                              <span>{new Date(m.createdAt).toLocaleString()}</span>
                             </div>
                           </div>
                         ))}
@@ -280,7 +282,7 @@ export default function Products() {
               </>
             ))}
             {products.length === 0 && (
-              <tr><td colSpan={6} className="p-4 text-center text-paper-400">No products found</td></tr>
+              <tr><td colSpan={7} className="p-4 text-center text-paper-400">No products found</td></tr>
             )}
           </tbody>
         </table>
