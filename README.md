@@ -60,7 +60,6 @@ The system manages customers, product inventory, and sales challans (dispatch do
 ## 2. System Architecture
 
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000"}}}%%
 flowchart TB
     subgraph Client["Browser"]
         UI["React + Vite Frontend<br/>Tailwind CSS · React Router · Axios"]
@@ -103,7 +102,6 @@ flowchart TB
 ## 3. Database Schema
 
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000"}}}%%
 erDiagram
     User ||--o{ CustomerFollowUp : creates
     User ||--o{ StockMovement : logs
@@ -189,7 +187,6 @@ erDiagram
 This is the most business-critical flow in the system: confirming a challan reduces stock, and that reduction must never leave the database in an inconsistent state (e.g., stock reduced but no audit log entry, or vice versa).
 
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"primaryTextColor": "#000000", "textColor": "#000000", "lineColor": "#000000", "actorTextColor": "#000000", "signalTextColor": "#000000"}}}%%
 sequenceDiagram
     participant U as User (Sales/Warehouse)
     participant F as Frontend
